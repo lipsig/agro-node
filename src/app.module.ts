@@ -9,9 +9,17 @@ import { FarmModule } from './farms/farm.module';
 import { CropModule } from './crops/crop.module';
 import { HarvestModule } from './harvests/harvest.module';
 
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+
+
 @Module({
   imports: [
-    ConfigModule.forRoot({ 
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      exclude: ['/api*'],
+    }),
+    ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env.example',
     }),
@@ -33,4 +41,4 @@ import { HarvestModule } from './harvests/harvest.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

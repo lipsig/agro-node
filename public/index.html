@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Agro</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; }
+    .container { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px;
+      background: #2e7031;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 1rem 1rem 1rem;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 10;
+    }
+    .sidebar h2 {
+      color: #fff;
+      font-size: 1.3rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.05rem;
+      padding: 0.6rem 1rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .sidebar a.active, .sidebar a:hover {
+      background: #388e3c;
+    }
+    .main-content {
+      flex: 1;
+      margin-left: 220px;
+      padding: 0;
+      min-height: 100vh;
+      background: #f4f6f8;
+    }
+    header { background: #388e3c; color: #fff; padding: 1rem 2rem; text-align: center; }
+    main { max-width: 1100px; margin: 2rem auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2rem; }
+    .dashboard-summary {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+    }
+    .summary-card {
+      background: #e8f5e9;
+      border-radius: 8px;
+      padding: 1.2rem 2rem;
+      min-width: 220px;
+      flex: 1;
+      box-shadow: 0 1px 4px #0001;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .summary-card h3 {
+      margin: 0 0 0.5rem 0;
+      color: #388e3c;
+      font-size: 1.1rem;
+    }
+    .summary-card .summary-value {
+      font-size: 2.1rem;
+      font-weight: bold;
+      color: #1976d2;
+    }
+    .charts-row {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+    .chart-box {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px #0001;
+      padding: 1rem;
+      flex: 1 1 300px;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .chart-box h4 {
+      margin-bottom: 0.5rem;
+      color: #388e3c;
+      font-size: 1rem;
+    }
+    h2 { color: #388e3c; }
+    .crud-section { margin-bottom: 2.5rem; }
+    label { display: block; margin-top: 1rem; }
+    input, select { padding: 0.5rem; margin-top: 0.2rem; width: 100%; border: 1px solid #ccc; border-radius: 4px; }
+    button { background: #388e3c; color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: 4px; margin-top: 1rem; cursor: pointer; }
+    button:hover { background: #2e7031; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
+    th { background: #e8f5e9; }
+    .actions button { background: #1976d2; margin-right: 0.5rem; }
+    .actions button.delete { background: #d32f2f; }
+    .actions button:hover { opacity: 0.8; }
+    .flex { display: flex; gap: 2rem; }
+    .error { color: #d32f2f; margin-top: 0.5rem; }
+    @media (max-width: 900px) {
+      main { padding: 0.5rem; }
+      .dashboard-summary, .charts-row { flex-direction: column; gap: 1rem; }
+      .main-content { margin-left: 0; }
+      .sidebar { position: static; width: 100%; flex-direction: row; height: auto; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h2>Dashboard Agro</h2>
+      <nav>
+        <a href="#dashboard" class="active" onclick="showSection('dashboard')">Dashboard</a>
+        <a href="#producers-section" onclick="showSection('producers-section')">Produtores</a>
+        <a href="#farms-section" onclick="showSection('farms-section')">Fazendas</a>
+        <a href="#harvests-section" onclick="showSection('harvests-section')">Safras</a>
+        <a href="#crops-section" onclick="showSection('crops-section')">Culturas</a>
+      </nav>
+    </aside>
+    <div class="main-content">
+      <header>
+        <h1>Dashboard Agro - CRUD</h1>
+      </header>
+      <main>
+        <!-- DASHBOARD SUMMARY -->
+        <section id="dashboard" class="crud-section">
+          <div class="dashboard-summary">
+            <div class="summary-card">
+              <h3>Total de Fazendas</h3>
+              <div class="summary-value" id="total-farms">0</div>
+            </div>
+            <div class="summary-card">
+              <h3>Total de Hectares</h3>
+              <div class="summary-value" id="total-hectares">0</div>
+            </div>
+          </div>
+          <div class="charts-row">
+            <div class="chart-box">
+              <h4>Fazendas por Estado</h4>
+              <canvas id="chart-estado" width="220" height="220"></canvas>
+            </div>
+            <div class="chart-box">
+              <h4>Fazendas por Cultura Plantada</h4>
+              <canvas id="chart-cultura" width="220" height="220"></canvas>
+            </div>
+            <div class="chart-box">
+              <h4>Uso do Solo</h4>
+              <canvas id="chart-solo" width="220" height="220"></canvas>
+            </div>
+          </div>
+        </section>
+        <!-- PRODUTORES -->
+        <section class="crud-section" id="producers-section" style="display:none">
+          <h2>Produtores</h2>
+          <form id="producer-form">
+            <label>Nome: <input type="text" id="producer-name" required></label>
+            <label>Documento (CPF/CNPJ): <input type="text" id="producer-document" required></label>
+            <button type="submit">Adicionar Produtor</button>
+            <div id="producer-error" class="error" style="display:none"></div>
+          </form>
+          <table id="producers-table">
+            <thead><tr><th>Nome</th><th>Documento</th><th>Ações</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+        <!-- FAZENDAS -->
+        <section class="crud-section" id="farms-section" style="display:none">
+          <h2>Fazendas</h2>
+          <form id="farm-form">
+            <div class="flex">
+              <label>Nome: <input type="text" id="farm-name" required></label>
+              <label>Cidade: <input type="text" id="farm-city" required></label>
+              <label>Estado:
+                <select id="farm-state" required>
+                  <option value="">Selecione</option>
+                  <option value="AC">AC</option>
+                  <option value="AL">AL</option>
+                  <option value="AP">AP</option>
+                  <option value="AM">AM</option>
+                  <option value="BA">BA</option>
+                  <option value="CE">CE</option>
+                  <option value="DF">DF</option>
+                  <option value="ES">ES</option>
+                  <option value="GO">GO</option>
+                  <option value="MA">MA</option>
+                  <option value="MT">MT</option>
+                  <option value="MS">MS</option>
+                  <option value="MG">MG</option>
+                  <option value="PA">PA</option>
+                  <option value="PB">PB</option>
+                  <option value="PR">PR</option>
+                  <option value="PE">PE</option>
+                  <option value="PI">PI</option>
+                  <option value="RJ">RJ</option>
+                  <option value="RN">RN</option>
+                  <option value="RS">RS</option>
+                  <option value="RO">RO</option>
+                  <option value="RR">RR</option>
+                  <option value="SC">SC</option>
+                  <option value="SP">SP</option>
+                  <option value="SE">SE</option>
+                  <option value="TO">TO</option>
+                </select>
+              </label>
+            </div>
+            <div class="flex">
+              <label>Área Total (em hectares): <input type="number" id="farm-total" required></label>
+              <label>Área Agricultáve (em hectares): <input type="number" id="farm-agricultural" required></label>
+              <label>Área Vegetação (em hectares): <input type="number" id="farm-vegetation" required></label>
+            </div>
+            <label>Produtor:
+              <select id="farm-producer" required></select>
+            </label>
+            <button type="submit">Adicionar Fazenda</button>
+          </form>
+          <table id="farms-table">
+            <thead><tr><th>Nome</th><th>Cidade</th><th>Estado</th><th>Produtor</th><th>Ações</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+        <!-- SAFRAS -->
+        <section class="crud-section" id="harvests-section" style="display:none">
+          <h2>Safras</h2>
+          <form id="harvest-form">
+            <label>Nome: <input type="text" id="harvest-name" required></label>
+            <label>Fazenda:
+              <select id="harvest-farm" required></select>
+            </label>
+            <button type="submit">Adicionar Safra</button>
+          </form>
+          <table id="harvests-table">
+            <thead><tr><th>Nome</th><th>Fazenda</th><th>Ações</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+        <!-- CULTURAS -->
+        <section class="crud-section" id="crops-section" style="display:none">
+          <h2>Culturas</h2>
+          <form id="crop-form">
+            <label>Nome: <input type="text" id="crop-name" required></label>
+            <label>Fazenda:
+              <select id="crop-farm" required></select>
+            </label>
+            <label>Safra:
+              <select id="crop-harvest" required></select>
+            </label>
+            <button type="submit">Adicionar Cultura</button>
+          </form>
+          <table id="crops-table">
+            <thead><tr><th>Nome</th><th>Fazenda</th><th>Safra</th><th>Ações</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    // Navegação Sidebar
+    function showSection(sectionId) {
+      document.querySelectorAll('main .crud-section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(sectionId).style.display = '';
+      document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+      if(sectionId === 'dashboard') {
+        document.querySelector('.sidebar a[href="#dashboard"]').classList.add('active');
+      } else {
+        document.querySelector('.sidebar a[href="#'+sectionId+'"]').classList.add('active');
+      }
+    }
+    // --- PRODUTORES ---
+    async function fetchProducers() {
+      const res = await fetch('/producers');
+      return res.json();
+    }
+    async function addProducer(name, document) {
+      await fetch('/producers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, document })
+      });
+    }
+    async function deleteProducer(id) {
+      await fetch(`/producers/${id}`, { method: 'DELETE' });
+    }
+    function renderProducers(producers) {
+      const tbody = document.querySelector('#producers-table tbody');
+      tbody.innerHTML = '';
+      producers.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.name}</td><td>${p.document}</td><td class="actions">
+          <button onclick="editProducer('${p.id}')">Editar</button>
+          <button class="delete" onclick="removeProducer('${p.id}')">Excluir</button>
+        </td>`;
+        tbody.appendChild(tr);
+      });
+      // Atualiza select de produtores nas fazendas
+      const select = document.getElementById('farm-producer');
+      select.innerHTML = '<option value="">Selecione</option>';
+      producers.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        select.appendChild(opt);
+      });
+    }
+    async function refreshProducers() {
+      const producers = await fetchProducers();
+      renderProducers(producers);
+    }
+    // --- FAZENDAS ---
+    async function fetchFarms() {
+      const res = await fetch('/farms');
+      return res.json();
+    }
+    async function addFarm(data) {
+      await fetch('/farms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    async function deleteFarm(id) {
+      await fetch(`/farms/${id}`, { method: 'DELETE' });
+    }
+    function renderFarms(farms) {
+      const tbody = document.querySelector('#farms-table tbody');
+      tbody.innerHTML = '';
+      farms.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${f.name}</td><td>${f.city}</td><td>${f.state}</td><td>${f.producer?.name || ''}</td><td class="actions">
+          <button onclick="editFarm('${f.id}')">Editar</button>
+          <button class="delete" onclick="removeFarm('${f.id}')">Excluir</button>
+        </td>`;
+        tbody.appendChild(tr);
+      });
+      // Atualiza select de fazendas nas safras e culturas
+      const selectFarm = document.getElementById('harvest-farm');
+      const selectCropFarm = document.getElementById('crop-farm');
+      [selectFarm, selectCropFarm].forEach(select => {
+        select.innerHTML = '<option value="">Selecione</option>';
+        farms.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.id;
+          opt.textContent = f.name;
+          select.appendChild(opt.cloneNode(true));
+        });
+      });
+    }
+    async function refreshFarms() {
+      const farms = await fetchFarms();
+      renderFarms(farms);
+    }
+    // --- SAFRAS ---
+    async function fetchHarvests() {
+      const res = await fetch('/harvests');
+      return res.json();
+    }
+    async function addHarvest(data) {
+      await fetch('/harvests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    async function deleteHarvest(id) {
+      await fetch(`/harvests/${id}`, { method: 'DELETE' });
+    }
+    function renderHarvests(harvests) {
+      const tbody = document.querySelector('#harvests-table tbody');
+      tbody.innerHTML = '';
+      harvests.forEach(h => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${h.name}</td><td>${h.farm?.name || ''}</td><td class="actions">
+          <button onclick="editHarvest('${h.id}')">Editar</button>
+          <button class="delete" onclick="removeHarvest('${h.id}')">Excluir</button>
+        </td>`;
+        tbody.appendChild(tr);
+      });
+      // Atualiza select de safras nas culturas
+      const select = document.getElementById('crop-harvest');
+      select.innerHTML = '<option value="">Selecione</option>';
+      harvests.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = h.name;
+        select.appendChild(opt);
+      });
+    }
+    async function refreshHarvests() {
+      const harvests = await fetchHarvests();
+      renderHarvests(harvests);
+    }
+    // --- CULTURAS ---
+    async function fetchCrops() {
+      const res = await fetch('/crops');
+      return res.json();
+    }
+    async function addCrop(data) {
+      await fetch('/crops', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    async function deleteCrop(id) {
+      await fetch(`/crops/${id}`, { method: 'DELETE' });
+    }
+    function renderCrops(crops) {
+      const tbody = document.querySelector('#crops-table tbody');
+      tbody.innerHTML = '';
+      crops.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${c.name}</td><td>${c.farm?.name || ''}</td><td>${c.harvest?.name || ''}</td><td class="actions">
+          <button onclick="editCrop('${c.id}')">Editar</button>
+          <button class="delete" onclick="removeCrop('${c.id}')">Excluir</button>
+        </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    async function refreshCrops() {
+      const crops = await fetchCrops();
+      renderCrops(crops);
+    }
+    // --- DASHBOARD SUMMARY E GRÁFICOS ---
+    async function updateDashboardSummary() {
+      const farms = await fetchFarms();
+      const crops = await fetchCrops();
+      // Total de fazendas
+      document.getElementById('total-farms').textContent = farms.length;
+      // Total de hectares
+      const totalHectares = farms.reduce((sum, f) => sum + (f.total_area || 0), 0);
+      document.getElementById('total-hectares').textContent = totalHectares;
+      // Gráfico por estado
+      const estadoCount = {};
+      farms.forEach(f => { estadoCount[f.state] = (estadoCount[f.state]||0)+1; });
+      renderPieChart('chart-estado', Object.keys(estadoCount), Object.values(estadoCount), 'Estados');
+      // Gráfico por cultura
+      const culturaCount = {};
+      crops.forEach(c => { culturaCount[c.name] = (culturaCount[c.name]||0)+1; });
+      renderPieChart('chart-cultura', Object.keys(culturaCount), Object.values(culturaCount), 'Culturas');
+      // Gráfico uso do solo
+      let agri = 0, veg = 0;
+      farms.forEach(f => {
+        agri += f.agricultural_area || 0;
+        veg += f.vegetation_area || 0;
+      });
+      renderPieChart('chart-solo', ['Agricultável', 'Vegetação'], [agri, veg], 'Uso do Solo');
+    }
+    let chartInstances = {};
+    function renderPieChart(canvasId, labels, data, label) {
+      if(chartInstances[canvasId]) chartInstances[canvasId].destroy();
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: label,
+            data: data,
+            backgroundColor: [
+              '#388e3c','#1976d2','#fbc02d','#d32f2f','#7b1fa2','#0288d1','#c2185b','#ffa000','#388e3c99','#1976d299'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+    // Inicialização
+    async function initDashboard() {
+      await refreshProducers();
+      await refreshFarms();
+      await refreshHarvests();
+      await refreshCrops();
+      await updateDashboardSummary();
+    }
+    initDashboard();
+
+    // --- PRODUTORES ---
+    let editingProducerId = null;
+    function setProducerFormMode(editMode, producer = null) {
+      const form = document.getElementById('producer-form');
+      const btn = form.querySelector('button[type="submit"]');
+      let cancelBtn = form.querySelector('.cancel-btn');
+      if (editMode) {
+        btn.textContent = 'Salvar';
+        if (!cancelBtn) {
+          cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button';
+          cancelBtn.textContent = 'Cancelar';
+          cancelBtn.className = 'cancel-btn';
+          cancelBtn.onclick = () => {
+            editingProducerId = null;
+            form.reset();
+            setProducerFormMode(false);
+          };
+          btn.after(cancelBtn);
+        }
+        document.getElementById('producer-name').value = producer.name;
+        document.getElementById('producer-document').value = producer.document;
+        document.getElementById('producer-document').disabled = true;
+      } else {
+        btn.textContent = 'Adicionar Produtor';
+        if (cancelBtn) cancelBtn.remove();
+        document.getElementById('producer-document').disabled = false;
+        form.reset();
+      }
+    }
+    async function updateProducer(id, data) {
+      await fetch(`/producers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    document.getElementById('producer-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('producer-name').value;
+      const documentValue = document.getElementById('producer-document').value;
+      const errorDiv = document.getElementById('producer-error');
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+      try {
+        if (editingProducerId) {
+          await updateProducer(editingProducerId, { name });
+          editingProducerId = null;
+          setProducerFormMode(false);
+        } else {
+          await addProducer(name, documentValue);
+        }
+        e.target.reset();
+        refreshProducers();
+      } catch (err) {
+        let msg = 'Erro ao cadastrar produtor.';
+        if (err instanceof Response) {
+          const data = await err.json().catch(() => ({}));
+          if (Array.isArray(data.message)) {
+            msg = data.message.join('<br>');
+          } else {
+            msg = data.message || data.error || msg;
+          }
+        }
+        errorDiv.innerHTML = msg;
+        errorDiv.style.display = 'block';
+      }
+    };
+    window.editProducer = async (id) => {
+      const producers = await fetchProducers();
+      const producer = producers.find(p => p.id === id);
+      if (producer) {
+        editingProducerId = id;
+        setProducerFormMode(true, producer);
+      }
+    };
+    window.removeProducer = async (id) => {
+      await deleteProducer(id);
+      refreshProducers();
+      refreshFarms();
+    };
+
+    // --- FAZENDAS ---
+    let editingFarmId = null;
+    function setFarmFormMode(editMode, farm = null) {
+      const form = document.getElementById('farm-form');
+      const btn = form.querySelector('button[type="submit"]');
+      let cancelBtn = form.querySelector('.cancel-btn');
+      if (editMode) {
+        btn.textContent = 'Salvar';
+        if (!cancelBtn) {
+          cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button';
+          cancelBtn.textContent = 'Cancelar';
+          cancelBtn.className = 'cancel-btn';
+          cancelBtn.onclick = () => {
+            editingFarmId = null;
+            form.reset();
+            setFarmFormMode(false);
+          };
+          btn.after(cancelBtn);
+        }
+        document.getElementById('farm-name').value = farm.name;
+        document.getElementById('farm-city').value = farm.city;
+        document.getElementById('farm-state').value = farm.state;
+        document.getElementById('farm-total').value = farm.total_area;
+        document.getElementById('farm-agricultural').value = farm.agricultural_area;
+        document.getElementById('farm-vegetation').value = farm.vegetation_area;
+        document.getElementById('farm-producer').value = farm.producer?.id || '';
+      } else {
+        btn.textContent = 'Adicionar Fazenda';
+        if (cancelBtn) cancelBtn.remove();
+        form.reset();
+      }
+    }
+    async function updateFarm(id, data) {
+      await fetch(`/farms/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    document.getElementById('farm-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('farm-name').value,
+        city: document.getElementById('farm-city').value,
+        state: document.getElementById('farm-state').value,
+        total_area: Number(document.getElementById('farm-total').value),
+        agricultural_area: Number(document.getElementById('farm-agricultural').value),
+        vegetation_area: Number(document.getElementById('farm-vegetation').value),
+        producerId: document.getElementById('farm-producer').value
+      };
+      if (editingFarmId) {
+        await updateFarm(editingFarmId, data);
+        editingFarmId = null;
+        setFarmFormMode(false);
+      } else {
+        await addFarm(data);
+      }
+      e.target.reset();
+      refreshFarms();
+    };
+    window.editFarm = async (id) => {
+      const farms = await fetchFarms();
+      const farm = farms.find(f => f.id === id);
+      if (farm) {
+        editingFarmId = id;
+        setFarmFormMode(true, farm);
+      }
+    };
+    window.removeFarm = async (id) => {
+      await deleteFarm(id);
+      refreshFarms();
+      refreshHarvests();
+      refreshCrops();
+    };
+
+    // --- SAFRAS ---
+    let editingHarvestId = null;
+    function setHarvestFormMode(editMode, harvest = null) {
+      const form = document.getElementById('harvest-form');
+      const btn = form.querySelector('button[type="submit"]');
+      let cancelBtn = form.querySelector('.cancel-btn');
+      if (editMode) {
+        btn.textContent = 'Salvar';
+        if (!cancelBtn) {
+          cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button';
+          cancelBtn.textContent = 'Cancelar';
+          cancelBtn.className = 'cancel-btn';
+          cancelBtn.onclick = () => {
+            editingHarvestId = null;
+            form.reset();
+            setHarvestFormMode(false);
+          };
+          btn.after(cancelBtn);
+        }
+        document.getElementById('harvest-name').value = harvest.name;
+        document.getElementById('harvest-farm').value = harvest.farm?.id || '';
+      } else {
+        btn.textContent = 'Adicionar Safra';
+        if (cancelBtn) cancelBtn.remove();
+        form.reset();
+      }
+    }
+    async function updateHarvest(id, data) {
+      await fetch(`/harvests/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    document.getElementById('harvest-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('harvest-name').value,
+        farmId: document.getElementById('harvest-farm').value
+      };
+      if (editingHarvestId) {
+        await updateHarvest(editingHarvestId, data);
+        editingHarvestId = null;
+        setHarvestFormMode(false);
+      } else {
+        await addHarvest(data);
+      }
+      e.target.reset();
+      refreshHarvests();
+    };
+    window.editHarvest = async (id) => {
+      const harvests = await fetchHarvests();
+      const harvest = harvests.find(h => h.id === id);
+      if (harvest) {
+        editingHarvestId = id;
+        setHarvestFormMode(true, harvest);
+      }
+    };
+    window.removeHarvest = async (id) => {
+      await deleteHarvest(id);
+      refreshHarvests();
+      refreshCrops();
+    };
+
+    // --- CULTURAS ---
+    let editingCropId = null;
+    function setCropFormMode(editMode, crop = null) {
+      const form = document.getElementById('crop-form');
+      const btn = form.querySelector('button[type="submit"]');
+      let cancelBtn = form.querySelector('.cancel-btn');
+      if (editMode) {
+        btn.textContent = 'Salvar';
+        if (!cancelBtn) {
+          cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button';
+          cancelBtn.textContent = 'Cancelar';
+          cancelBtn.className = 'cancel-btn';
+          cancelBtn.onclick = () => {
+            editingCropId = null;
+            form.reset();
+            setCropFormMode(false);
+          };
+          btn.after(cancelBtn);
+        }
+        document.getElementById('crop-name').value = crop.name;
+        document.getElementById('crop-farm').value = crop.farm?.id || '';
+        document.getElementById('crop-harvest').value = crop.harvest?.id || '';
+      } else {
+        btn.textContent = 'Adicionar Cultura';
+        if (cancelBtn) cancelBtn.remove();
+        form.reset();
+      }
+    }
+    async function updateCrop(id, data) {
+      await fetch(`/crops/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    document.getElementById('crop-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('crop-name').value,
+        farmId: document.getElementById('crop-farm').value,
+        harvestId: document.getElementById('crop-harvest').value
+      };
+      if (editingCropId) {
+        await updateCrop(editingCropId, data);
+        editingCropId = null;
+        setCropFormMode(false);
+      } else {
+        await addCrop(data);
+      }
+      e.target.reset();
+      refreshCrops();
+    };
+    window.editCrop = async (id) => {
+      const crops = await fetchCrops();
+      const crop = crops.find(c => c.id === id);
+      if (crop) {
+        editingCropId = id;
+        setCropFormMode(true, crop);
+      }
+    };
+    window.removeCrop = async (id) => {
+      await deleteCrop(id);
+      refreshCrops();
+    };
+  </script>
+</body>
+</html>
