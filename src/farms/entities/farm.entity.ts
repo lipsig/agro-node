@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, OneToMany, Check } from 'typeorm';
 import { Producer } from '../../producers/entities/producer.entity';
-import { Crop } from '../crops/crop.entity';
+import { Crop } from '../../crops/entities/crop.entity';
 
 @Entity('farms')
 @Check(`"agricultural_area" + "vegetation_area" <= "total_area"`)
