@@ -1,98 +1,147 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Agro Node - Gerenciamento de Produtores Rurais
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este projeto é uma aplicação completa para o cadastro e gestão de produtores rurais, propriedades, safras e culturas, com dashboard visual, API documentada via Swagger e ambiente pronto para Docker/PostgreSQL.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Funcionalidades
 
-## Description
+- **Cadastro, edição e exclusão de produtores rurais**
+  - Validação de CPF ou CNPJ
+- **Gestão de fazendas (propriedades)**
+  - Nome, cidade, estado, áreas (total, agricultável, vegetação)
+  - Validação: soma das áreas agricultável e vegetação não pode exceder a área total
+- **Gestão de safras**
+  - Ex: Safra 2021, Safra 2022
+- **Gestão de culturas plantadas**
+  - Ex: Soja na Safra 2021, Milho na Safra 2022
+  - Uma fazenda pode ter várias culturas por safra
+- **Relacionamentos**
+  - Um produtor pode ter várias fazendas
+  - Uma fazenda pode ter várias culturas e safras
+- **Dashboard visual**
+  - Total de fazendas cadastradas
+  - Total de hectares registrados
+  - Gráficos de pizza: por estado, por cultura, por uso do solo
+- **API RESTful documentada com Swagger**
+- **Ambiente pronto para Docker**
+  - Banco de dados PostgreSQL
+  - Containers para API, seed, testes e dashboard
+- **Testes automatizados**
+  - Testes unitários e de integração cobrindo regras de negócio e endpoints principais
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Entidades
 
-## Project setup
+- **Producer** (Produtor Rural)
+  - id, document (CPF/CNPJ), name, farms
+- **Farm** (Fazenda/Propriedade)
+  - id, name, city, state, total_area, agricultural_area, vegetation_area, producer, crops, harvests
+- **Harvest** (Safra)
+  - id, name, farm, crops
+- **Crop** (Cultura Plantada)
+  - id, name, farm, harvest
 
-```bash
-$ npm install
+## Endpoints Principais
+
+| Entidade   | Método | Rota                | Descrição                   |
+|------------|--------|---------------------|-----------------------------|
+| Producer   | GET    | `/producers`        | Listar produtores           |
+|            | POST   | `/producers`        | Criar produtor              |
+|            | GET    | `/producers/:id`    | Detalhar produtor           |
+|            | PUT    | `/producers/:id`    | Atualizar produtor          |
+|            | DELETE | `/producers/:id`    | Remover produtor            |
+| Farm       | GET    | `/farms`            | Listar fazendas             |
+|            | POST   | `/farms`            | Criar fazenda               |
+|            | GET    | `/farms/:id`        | Detalhar fazenda            |
+|            | PUT    | `/farms/:id`        | Atualizar fazenda           |
+|            | DELETE | `/farms/:id`        | Remover fazenda             |
+| Harvest    | GET    | `/harvests`         | Listar safras               |
+|            | POST   | `/harvests`         | Criar safra                 |
+|            | GET    | `/harvests/:id`     | Detalhar safra              |
+|            | PATCH  | `/harvests/:id`     | Atualizar safra             |
+|            | DELETE | `/harvests/:id`     | Remover safra               |
+| Crop       | GET    | `/crops`            | Listar culturas             |
+|            | POST   | `/crops`            | Criar cultura               |
+|            | GET    | `/crops/:id`        | Detalhar cultura            |
+|            | PATCH  | `/crops/:id`        | Atualizar cultura           |
+|            | DELETE | `/crops/:id`        | Remover cultura             |
+
+## Documentação da API
+
+- **Swagger disponível em:**  
+  [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+## Dashboard
+
+- **Dashboard visual disponível em:**  
+  [http://localhost:3000/](http://localhost:3000/)
+- Permite CRUD completo via interface web e exibe gráficos e totais em tempo real.
+
+## Como rodar o projeto
+
+### Pré-requisitos
+
+- [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
+
+### Passos
+
+1. **Clone o repositório**
+   ```bash
+   git clone <repo-url>
+   cd agro-node
+   ```
+
+2. **Suba os containers**
+   ```bash
+   docker compose up --build
+   ```
+   - Aguarde o container `db` (PostgreSQL) iniciar.
+   - O backend NestJS será iniciado em seguida.
+   - **Após o carregamento da aplicação, um seed automático é executado para popular o banco de dados com dados de exemplo.**
+   - O dashboard estará disponível em `http://localhost:3000/`.
+
+3. **Acessar a API e Dashboard**
+   - **Dashboard:** [http://localhost:3000/](http://localhost:3000/)
+   - **Swagger:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+4. **Rodar testes**
+   ```bash
+   docker compose run --rm e2e
+   ```
+
+### Variáveis de ambiente
+
+Veja `.env.example` para configuração do banco de dados (já pronto para uso com Docker).
+
+## Tecnologias utilizadas
+
+- **NestJS** (Node.js, TypeScript)
+- **TypeORM**
+- **PostgreSQL**
+- **Docker & Docker Compose**
+- **Swagger (OpenAPI)**
+- **Dashboard frontend estático (HTML/JS/CSS)**
+
+## Testes automatizados
+
+O projeto possui testes unitários e de integração para garantir a qualidade das regras de negócio e dos endpoints da API. Os testes cobrem cenários como validação de CPF/CNPJ, regras de área das fazendas, relacionamentos entre entidades e operações CRUD.
+
+Para rodar os testes:
+
+```powershell
+# Execute dentro do container ou localmente se preferir
+npm run test           # Testes unitários
+npm run test:e2e       # Testes de integração (e2e)
 ```
 
-## Compile and run the project
+Ou via Docker Compose:
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```powershell
+docker compose run --rm e2e
 ```
 
-## Run tests
+## Observações
 
-```bash
-# unit tests
-$ npm run test
+- O projeto é para fins didáticos e pode ser expandido facilmente.
+- O banco de dados é reiniciado a cada novo `docker compose up` se o volume for removido.
+- O dashboard consome a própria API REST para exibir e manipular dados.
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
