@@ -16,6 +16,16 @@ export class FarmService {
   ) {}
 
   async create(createFarmDto: CreateFarmDto): Promise<Farm> {
+    // Validação da soma das áreas
+    if (
+      createFarmDto.agricultural_area + createFarmDto.vegetation_area >
+      createFarmDto.total_area
+    ) {
+      throw new Error(
+        'A soma de área agricultável e vegetação não pode exceder a área total',
+      );
+    }
+
     const producer = await this.producerRepository.findOne({
       where: { id: createFarmDto.producerId },
     });
@@ -48,6 +58,19 @@ export class FarmService {
 
   async update(id: string, updateFarmDto: UpdateFarmDto): Promise<Farm> {
     const farm = await this.findOne(id);
+
+    // Validação da soma das áreas ao atualizar
+    const agricultural_area =
+      updateFarmDto.agricultural_area ?? farm.agricultural_area;
+    const vegetation_area =
+      updateFarmDto.vegetation_area ?? farm.vegetation_area;
+    const total_area = updateFarmDto.total_area ?? farm.total_area;
+
+    if (agricultural_area + vegetation_area > total_area) {
+      throw new Error(
+        'A soma de área agricultável e vegetação não pode exceder a área total',
+      );
+    }
 
     Object.assign(farm, updateFarmDto);
 

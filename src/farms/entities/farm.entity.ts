@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, OneToMany, Check } from 'typeorm';
 import { Producer } from '../../producers/entities/producer.entity';
 import { Crop } from '../../crops/entities/crop.entity';
+import { Harvest } from '../../harvests/entities/harvest.entity';
 
 @Entity('farms')
 @Check(`"agricultural_area" + "vegetation_area" <= "total_area"`)
@@ -31,4 +32,7 @@ export class Farm {
 
   @OneToMany(() => Crop, (crop) => crop.farm, { cascade: true })
   crops: Crop[];
+
+  @OneToMany(() => Harvest, (harvest) => harvest.farm)
+  harvests: Harvest[];
 }
