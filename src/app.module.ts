@@ -3,7 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ProducersModule } from './producers/producers.module';
+
+import { ProducersModule } from './producers/producer.module';
+import { FarmModule } from './farms/farm.module';
+import { CropModule } from './crops/crop.module';
+import { HarvestModule } from './harvests/harvest.module';
 
 @Module({
   imports: [
@@ -15,10 +19,13 @@ import { ProducersModule } from './producers/producers.module';
       username: process.env.DATABASE_USER,
       password: process.env.DATABASE_PASSWORD,
       database: process.env.DATABASE_NAME,
-      autoLoadEntities: true,
-      synchronize: true, 
+      autoLoadEntities: true, // carrega automaticamente todas as entidades registradas nos módulos
+      synchronize: true, // para dev, gera/atualiza tabelas automaticamente
     }),
     ProducersModule,
+    FarmModule,
+    CropModule,
+    HarvestModule,
   ],
   controllers: [AppController],
   providers: [AppService],
