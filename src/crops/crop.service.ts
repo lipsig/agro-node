@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Crop } from './entities/crop.entity';
@@ -70,6 +70,13 @@ export class CropService {
 
   async remove(id: string) {
     this.logger.log(`Removendo cultura id: ${id}`);
-    await this.cropRepository.delete(id);
+    try {
+      await this.cropRepository.delete(id);
+    } catch (err) {
+      if (err && err.driverError && err.driverError.code === '23503') {
+        throw new ForbiddenException('Não é possível deletar: cultura utilizada em outro registro');
+      }
+      throw err;
+    }
   }
 }

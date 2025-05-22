@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Producer } from './entities/producer.entity';
@@ -51,6 +51,14 @@ export class ProducersService {
   async remove(id: string): Promise<void> {
     this.logger.log(`Removendo produtor id: ${id}`);
     await this.findOne(id);
-    await this.producerRepo.delete(id);
+    try {
+      await this.producerRepo.delete(id);
+    } catch (err) {
+      // Trata erro de integridade referencial (chave estrangeira)
+      if (err && err.driverError && err.driverError.code === '23503') {
+        throw new ForbiddenException('Não é possível deletar: produtor utilizado em fazenda');
+      }
+      throw err;
+    }
   }
 }

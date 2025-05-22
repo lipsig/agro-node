@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Farm } from './entities/farm.entity';
@@ -38,13 +38,12 @@ export class FarmService {
       throw new NotFoundException('Producer not found');
     }
 
-    // Verifica se já existe fazenda com o mesmo nome para o mesmo produtor
+    // Não permite fazenda com o mesmo nome (independente do produtor)
     const existing = await this.farmRepository.findOne({
-      where: { name: createFarmDto.name, producer: { id: createFarmDto.producerId } },
-      relations: ['producer'],
+      where: { name: createFarmDto.name },
     });
     if (existing) {
-      throw new BadRequestException('Já existe uma fazenda com este nome para este produtor');
+      throw new BadRequestException('Já existe uma fazenda com este nome');
     }
 
     const farm = this.farmRepository.create({
@@ -102,6 +101,25 @@ export class FarmService {
   async remove(id: string): Promise<void> {
     this.logger.log(`Removendo fazenda id: ${id}`);
     const farm = await this.findOne(id);
-    await this.farmRepository.remove(farm);
+
+    // Verifica se há safras ou culturas associadas
+    const hasHarvests = farm.harvests && farm.harvests.length > 0;
+    const hasCrops = farm.crops && farm.crops.length > 0;
+    if (hasHarvests) {
+      throw new ForbiddenException('Não é possível deletar: fazenda utilizada em registro de safra');
+    }
+    if (hasCrops) {
+      throw new ForbiddenException('Não é possível deletar: fazenda utilizada em registro de cultura');
+    }
+
+    try {
+      await this.farmRepository.remove(farm);
+    } catch (err) {
+      // Trata erro de integridade referencial (chave estrangeira)
+      if (err && err.driverError && err.driverError.code === '23503') {
+        throw new ForbiddenException('Não é possível deletar: fazenda utilizada em registro de safra ou cultura');
+      }
+      throw err;
+    }
   }
 }

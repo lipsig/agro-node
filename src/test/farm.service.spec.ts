@@ -87,10 +87,10 @@ describe('FarmService', () => {
     await expect(service.remove('farm-1')).resolves.toBeUndefined();
   });
 
-  it('should not allow duplicate farm name for same producer', async () => {
-    // Simula que já existe uma fazenda com o mesmo nome para o produtor apenas na verificação de duplicidade
+  it('should not allow duplicate farm name', async () => {
+    // Simula que já existe uma fazenda com o mesmo nome (independente do produtor)
     (farmRepo.findOne as jest.Mock).mockImplementationOnce(({ where }) => {
-      if (where && where.name === 'Fazenda Boa Vista' && where.producer && where.producer.id === 'prod-1') return mockFarm;
+      if (where && where.name === 'Fazenda Boa Vista') return mockFarm;
       return null;
     });
     const dto = {
@@ -103,7 +103,7 @@ describe('FarmService', () => {
       producerId: 'prod-1',
     };
     await expect(service.create(dto)).rejects.toThrowError(expect.objectContaining({
-      message: 'Já existe uma fazenda com este nome para este produtor'
+      message: 'Já existe uma fazenda com este nome'
     }));
   });
 });

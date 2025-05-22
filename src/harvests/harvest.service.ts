@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Harvest } from './entities/harvest.entity';
@@ -41,13 +41,42 @@ export class HarvestService {
     return this.harvestRepository.findOne({ where: { id }, relations: ['farm', 'crops'] });
   }
 
-  update(id: string, data: UpdateHarvestDto) {
+  async update(id: string, data: UpdateHarvestDto) {
     this.logger.log(`Atualizando safra id: ${id} com dados: ${JSON.stringify(data)}`);
-    return this.harvestRepository.update(id, data);
+    const harvest = await this.harvestRepository.findOne({ where: { id }, relations: ['farm', 'crops'] });
+    if (!harvest) {
+      throw new NotFoundException('Harvest not found');
+    }
+    if (data.name !== undefined) {
+      harvest.name = data.name;
+    }
+    if (data.farmId !== undefined) {
+      const farm = await this.farmRepository.findOne({ where: { id: data.farmId } });
+      if (!farm) {
+        throw new NotFoundException('Farm not found');
+      }
+      harvest.farm = farm;
+    }
+    await this.harvestRepository.save(harvest);
+    return;
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     this.logger.log(`Removendo safra id: ${id}`);
-    return this.harvestRepository.delete(id);
+    const harvest = await this.harvestRepository.findOne({ where: { id }, relations: ['crops'] });
+    if (!harvest) {
+      throw new NotFoundException('Harvest not found');
+    }
+    if (harvest.crops && harvest.crops.length > 0) {
+      throw new ForbiddenException('Não é possível deletar: safra utilizada em registro de cultura');
+    }
+    try {
+      await this.harvestRepository.delete(id);
+    } catch (err) {
+      if (err && err.driverError && err.driverError.code === '23503') {
+        throw new ForbiddenException('Não é possível deletar: safra utilizada em registro de cultura');
+      }
+      throw err;
+    }
   }
 }

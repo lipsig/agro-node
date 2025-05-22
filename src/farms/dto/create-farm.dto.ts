@@ -5,7 +5,6 @@ export class CreateFarmDto {
   @ApiProperty({ description: 'Nome da fazenda', example: 'Fazenda Boa Vista' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[^\d]+$/, { message: 'O nome da fazenda não pode conter números' })
   name: string;
 
   @ApiProperty({ description: 'Cidade da fazenda', example: 'Uberlândia' })
