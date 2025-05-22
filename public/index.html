@@ -222,7 +222,7 @@
             </div>
             <div class="flex">
               <label>Área Total (em hectares): <input type="number" id="farm-total" required></label>
-              <label>Área Agricultáve (em hectares): <input type="number" id="farm-agricultural" required></label>
+              <label>Área Agricultável (em hectares): <input type="number" id="farm-agricultural" required></label>
               <label>Área Vegetação (em hectares): <input type="number" id="farm-vegetation" required></label>
             </div>
             <label>Produtor:
@@ -230,6 +230,7 @@
             </label>
             <button type="submit">Adicionar Fazenda</button>
           </form>
+          <div id="farm-error" class="error" style="display:none"></div>
           <table id="farms-table">
             <thead><tr><th>Nome</th><th>Cidade</th><th>Estado</th><th>Produtor</th><th>Ações</th></tr></thead>
             <tbody></tbody>
@@ -245,6 +246,7 @@
             </label>
             <button type="submit">Adicionar Safra</button>
           </form>
+          <div id="harvest-error" class="error" style="display:none"></div>
           <table id="harvests-table">
             <thead><tr><th>Nome</th><th>Fazenda</th><th>Ações</th></tr></thead>
             <tbody></tbody>
@@ -263,6 +265,7 @@
             </label>
             <button type="submit">Adicionar Cultura</button>
           </form>
+          <div id="crop-error" class="error" style="display:none"></div>
           <table id="crops-table">
             <thead><tr><th>Nome</th><th>Fazenda</th><th>Safra</th><th>Ações</th></tr></thead>
             <tbody></tbody>
@@ -296,7 +299,12 @@
       });
     }
     async function deleteProducer(id) {
-      await fetch(`/producers/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/producers/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        let data = {};
+        try { data = await res.json(); } catch {}
+        throw { status: res.status, ...data };
+      }
     }
     function renderProducers(producers) {
       const tbody = document.querySelector('#producers-table tbody');
@@ -329,14 +337,24 @@
       return res.json();
     }
     async function addFarm(data) {
-      await fetch('/farms', {
+      const res = await fetch('/farms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
+      if (!res.ok) {
+        let responseData = {};
+        try { responseData = await res.json(); } catch {}
+        throw { status: res.status, ...responseData };
+      }
     }
     async function deleteFarm(id) {
-      await fetch(`/farms/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/farms/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        let data = {};
+        try { data = await res.json(); } catch {}
+        throw { status: res.status, ...data };
+      }
     }
     function renderFarms(farms) {
       const tbody = document.querySelector('#farms-table tbody');
@@ -379,7 +397,12 @@
       });
     }
     async function deleteHarvest(id) {
-      await fetch(`/harvests/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/harvests/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        let data = {};
+        try { data = await res.json(); } catch {}
+        throw { status: res.status, ...data };
+      }
     }
     function renderHarvests(harvests) {
       const tbody = document.querySelector('#harvests-table tbody');
@@ -419,7 +442,12 @@
       });
     }
     async function deleteCrop(id) {
-      await fetch(`/crops/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/crops/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        let data = {};
+        try { data = await res.json(); } catch {}
+        throw { status: res.status, ...data };
+      }
     }
     function renderCrops(crops) {
       const tbody = document.querySelector('#crops-table tbody');
@@ -544,23 +572,36 @@
           await updateProducer(editingProducerId, { name });
           editingProducerId = null;
           setProducerFormMode(false);
+          e.target.reset(); // Limpa só em sucesso
         } else {
-          await addProducer(name, documentValue);
+          const res = await fetch('/producers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, document: documentValue })
+          });
+          if (!res.ok) {
+            let data = {};
+            try {
+              data = await res.json();
+            } catch {}
+            throw { status: res.status, ...data };
+          }
+          setProducerFormMode(false); // Garante modo normal após sucesso
+          e.target.reset(); // Limpa só em sucesso
         }
-        e.target.reset();
         refreshProducers();
       } catch (err) {
         let msg = 'Erro ao cadastrar produtor.';
-        if (err instanceof Response) {
-          const data = await err.json().catch(() => ({}));
-          if (Array.isArray(data.message)) {
-            msg = data.message.join('<br>');
+        if (err && (err.message || err.error)) {
+          if (Array.isArray(err.message)) {
+            msg = err.message.join('<br>');
           } else {
-            msg = data.message || data.error || msg;
+            msg = err.message || err.error || msg;
           }
         }
         errorDiv.innerHTML = msg;
         errorDiv.style.display = 'block';
+        // Não faz reset do form em caso de erro
       }
     };
     window.editProducer = async (id) => {
@@ -572,9 +613,25 @@
       }
     };
     window.removeProducer = async (id) => {
-      await deleteProducer(id);
-      refreshProducers();
-      refreshFarms();
+      const errorDiv = document.getElementById('producer-error');
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+      try {
+        await deleteProducer(id);
+        refreshProducers();
+        refreshFarms();
+      } catch (err) {
+        let msg = 'Erro ao excluir produtor.';
+        if (err && (err.message || err.error)) {
+          if (Array.isArray(err.message)) {
+            msg = err.message.join('<br>');
+          } else {
+            msg = err.message || err.error || msg;
+          }
+        }
+        errorDiv.innerHTML = msg;
+        errorDiv.style.display = 'block';
+      }
     };
 
     // --- FAZENDAS ---
@@ -628,15 +685,31 @@
         vegetation_area: Number(document.getElementById('farm-vegetation').value),
         producerId: document.getElementById('farm-producer').value
       };
-      if (editingFarmId) {
-        await updateFarm(editingFarmId, data);
-        editingFarmId = null;
-        setFarmFormMode(false);
-      } else {
-        await addFarm(data);
+      const errorDiv = document.getElementById('farm-error');
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+      try {
+        if (editingFarmId) {
+          await updateFarm(editingFarmId, data);
+          editingFarmId = null;
+          setFarmFormMode(false);
+        } else {
+          await addFarm(data);
+        }
+        e.target.reset();
+        refreshFarms();
+      } catch (err) {
+        let msg = 'Erro ao cadastrar fazenda.';
+        if (err && (err.message || err.error)) {
+          if (Array.isArray(err.message)) {
+            msg = err.message.join('<br>');
+          } else {
+            msg = err.message || err.error || msg;
+          }
+        }
+        errorDiv.innerHTML = msg;
+        errorDiv.style.display = 'block';
       }
-      e.target.reset();
-      refreshFarms();
     };
     window.editFarm = async (id) => {
       const farms = await fetchFarms();
@@ -647,10 +720,26 @@
       }
     };
     window.removeFarm = async (id) => {
-      await deleteFarm(id);
-      refreshFarms();
-      refreshHarvests();
-      refreshCrops();
+      const errorDiv = document.getElementById('farm-error');
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+      try {
+        await deleteFarm(id);
+        refreshFarms();
+        refreshHarvests();
+        refreshCrops();
+      } catch (err) {
+        let msg = 'Erro ao excluir fazenda.';
+        if (err && (err.message || err.error)) {
+          if (Array.isArray(err.message)) {
+            msg = err.message.join('<br>');
+          } else {
+            msg = err.message || err.error || msg;
+          }
+        }
+        errorDiv.innerHTML = msg;
+        errorDiv.style.display = 'block';
+      }
     };
 
     // --- SAFRAS ---
@@ -713,9 +802,25 @@
       }
     };
     window.removeHarvest = async (id) => {
-      await deleteHarvest(id);
-      refreshHarvests();
-      refreshCrops();
+      const errorDiv = document.getElementById('harvest-error');
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+      try {
+        await deleteHarvest(id);
+        refreshHarvests();
+        refreshCrops();
+      } catch (err) {
+        let msg = 'Erro ao excluir safra.';
+        if (err && (err.message || err.error)) {
+          if (Array.isArray(err.message)) {
+            msg = err.message.join('<br>');
+          } else {
+            msg = err.message || err.error || msg;
+          }
+        }
+        errorDiv.innerHTML = msg;
+        errorDiv.style.display = 'block';
+      }
     };
 
     // --- CULTURAS ---
@@ -780,8 +885,24 @@
       }
     };
     window.removeCrop = async (id) => {
-      await deleteCrop(id);
-      refreshCrops();
+      const errorDiv = document.getElementById('crop-error');
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+      try {
+        await deleteCrop(id);
+        refreshCrops();
+      } catch (err) {
+        let msg = 'Erro ao excluir cultura.';
+        if (err && (err.message || err.error)) {
+          if (Array.isArray(err.message)) {
+            msg = err.message.join('<br>');
+          } else {
+            msg = err.message || err.error || msg;
+          }
+        }
+        errorDiv.innerHTML = msg;
+        errorDiv.style.display = 'block';
+      }
     };
   </script>
 </body>
