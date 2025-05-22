@@ -19,7 +19,7 @@ async function bootstrap() {
 
   // Crie fazendas
   const farm1 = await farms.create({
-    name: 'Fazenda 1',
+    name: 'Fazenda um',
     city: 'Cidade A',
     state: 'SP',
     total_area: 100,
@@ -29,7 +29,7 @@ async function bootstrap() {
   });
 
   const farm2 = await farms.create({
-    name: 'Fazenda 2',
+    name: 'Fazenda dois',
     city: 'Cidade B',
     state: 'MG',
     total_area: 200,
